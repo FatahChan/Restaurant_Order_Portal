@@ -2,7 +2,13 @@
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
-import { index, int, sqliteTableCreator, text } from "drizzle-orm/sqlite-core";
+import {
+  decimal,
+  integer,
+  pgTableCreator,
+  serial,
+  text,
+} from "drizzle-orm/pg-core";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -10,44 +16,42 @@ import { index, int, sqliteTableCreator, text } from "drizzle-orm/sqlite-core";
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = sqliteTableCreator((name) => `order-portal_${name}`);
+export const createTable = pgTableCreator((name) => `order_portal_${name}`);
 
-export const ItemsTable = createTable(
-  "items",
-  {
-    id: int("id").primaryKey({ autoIncrement: true }).notNull(),
-    name: text("name").notNull(),
-    price: int("price").notNull(),
-    description: text("description").default("").notNull(),
-    image: text("image").notNull(),
-    category_id: int("category_id")
-      .notNull()
-      .references(() => CategoriesTable.id),
-  },
-  (table) => ({
-    nameIdx: index("name").on(table.name),
-  }),
-);
+export const ItemsTable = createTable("items", {
+  id: serial("id").primaryKey().notNull(),
+  name: text("name").notNull(),
+  price: decimal("price", { scale: 2 }).notNull().$type<number>(),
+  description: text("description").default("").notNull(),
+  image: text("image").notNull(),
+  category_id: integer("category_id")
+    .notNull()
+    .references(() => CategoriesTable.id),
+});
 
 export const CategoriesTable = createTable("categories", {
-  id: int("id").primaryKey({ autoIncrement: true }).notNull(),
+  id: serial("id").primaryKey().notNull(),
   name: text("name").notNull(),
 });
+
 export const OrdersTable = createTable("orders", {
-  id: int("id").primaryKey({ autoIncrement: true }).notNull(),
-  table: int("table"),
+  id: serial("id").primaryKey().notNull(),
+  table: integer("table"),
   name: text("name").default("").notNull(),
 });
 export const OrderItemsTable = createTable("order_items", {
-  id: int("id").primaryKey({ autoIncrement: true }).notNull(),
-  order_id: int("order_id")
+  id: serial("id").primaryKey().notNull(),
+  order_id: integer("order_id")
     .notNull()
     .references(() => OrdersTable.id),
-  item_id: int("item_id")
+  item_id: integer("item_id")
     .notNull()
     .references(() => ItemsTable.id),
-  quantity: int("quantity").default(1).notNull(),
+  quantity: integer("quantity").default(1).notNull(),
   notes: text("notes").default("").notNull(),
+  status: text("status", { enum: ["pending", "served", "cancelled"] })
+    .default("pending")
+    .notNull(),
 });
 
 type ItemSelectType = InferSelectModel<typeof ItemsTable>;
