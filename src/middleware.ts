@@ -2,17 +2,22 @@ import { createClient } from "@/server/supabase";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// This function can be marked `async` if using `await` inside
 export async function middleware(request: NextRequest) {
-  const url = request.nextUrl.clone();
-  const originalPath = request.nextUrl.clone().pathname;
-  url.pathname = "/login";
-  const supabaseClient = createClient(request.cookies);
+  const nextURL = request.nextUrl.clone();
+  const redirectURL = nextURL.pathname;
+
+  nextURL.pathname = "/login";
+
+  const supabaseClient = await createClient();
   const {
     data: { session },
-  } = await supabaseClient.auth.getSession();
+  } = await supabaseClient.auth.getSession().catch(() => {
+    throw new Error("Session not found");
+  });
   if (!session) {
-    return NextResponse.redirect(`${url.toString()}?redirect=${originalPath}`);
+    return NextResponse.redirect(
+      `${nextURL.toString()}?redirect=${redirectURL}`,
+    );
   }
   return NextResponse.next();
 }

@@ -1,6 +1,5 @@
 import { createClient } from "@/server/supabase";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import React from "react";
 
 function Login({
@@ -10,18 +9,17 @@ function Login({
 }) {
   const handleLogin = async (formData: FormData) => {
     "use server";
-    const { auth } = createClient(cookies());
+    const supabaseClient = await createClient();
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
-
-    const { error } = await auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) {
-      console.error(error);
-      return;
-    }
+    await supabaseClient.auth
+      .signInWithPassword({
+        email,
+        password,
+      })
+      .catch((e: Error) => {
+        console.error(e);
+      });
     redirect((searchParams.redirect as string | undefined) ?? "/");
   };
   return (
@@ -36,6 +34,7 @@ function Login({
         <input
           type="email"
           id="email"
+          name="email"
           className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
           placeholder="name@flowbite.com"
           required
@@ -51,6 +50,7 @@ function Login({
         <input
           type="password"
           id="password"
+          name="password"
           className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
           required
         />
