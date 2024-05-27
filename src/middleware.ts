@@ -43,12 +43,10 @@ async function isAuthorized(request: NextRequest) {
 
 export async function middleware(request: NextRequest) {
   const isAuthenticatedResponse = await isAuthenticated(request);
-  console.log({ isAuthenticatedResponse });
   if (isAuthenticatedResponse) {
     return isAuthenticatedResponse;
   }
   const isAuthorizedResponse = await isAuthorized(request);
-  console.log({ isAuthorizedResponse });
   if (isAuthorizedResponse) {
     return isAuthorizedResponse;
   }

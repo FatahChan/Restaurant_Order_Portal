@@ -1,16 +1,8 @@
 import React from "react";
-import { addItem, getCategories } from "@/server/db/menuActions";
+import { getCategories } from "@/server/db/menuActions";
 import { createClient } from "@/server/supabase";
-import { upload } from "@/server/supabase/actions";
-function Admin() {
-  return (
-    <div className="flex p-6">
-      <AddItemForm />
-    </div>
-  );
-}
 
-async function AddItemForm() {
+export async function AddItemForm() {
   const collections = await getCategories();
   const handleAddItem = async (formData: FormData) => {
     "use server";
@@ -29,22 +21,26 @@ async function AddItemForm() {
       return new Error("Invalid form data");
     }
     const bucket = "items";
-    const uploadFileResponse = await upload({
-      bucket,
-      name: name,
-      file: image,
-    });
-    if (typeof uploadFileResponse !== "string") {
-      return uploadFileResponse;
-    }
+    const supabase = await createClient();
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(name, image);
 
-    await addItem({
-      name,
-      price: Number(price),
-      category_id,
-      description,
-      image: uploadFileResponse,
-    });
+    if (error) {
+      return { error };
+    }
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("items").getPublicUrl(data.path);
+    return publicUrl;
+
+    // await addItem({
+    //   name,
+    //   price: Number(price),
+    //   category_id,
+    //   description,
+    //   image: publicUrl,
+    // });
   };
   return (
     <form
@@ -129,5 +125,3 @@ async function AddItemForm() {
     </form>
   );
 }
-
-export default Admin;
