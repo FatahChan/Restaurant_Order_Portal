@@ -1,16 +1,15 @@
 import CollectionGrid from "@/components/CollectionGrid";
 import ItemCard from "@/components/ItemCard";
+import { getItems } from "@/server/db/menuActions";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const items = await getItems();
   return (
     <main className="flex min-h-screen flex-col items-center justify-center">
       <CollectionGrid>
-        <ItemCard />
-        <ItemCard />
-        <ItemCard />
-        <ItemCard />
-        <ItemCard />
-        <ItemCard />
+        {items.map((item) => (
+          <ItemCard key={item.id} />
+        ))}
       </CollectionGrid>
     </main>
   );

@@ -3,7 +3,11 @@
 import { eq } from "drizzle-orm";
 import { db } from ".";
 import { ItemsTable } from "./schema";
-import type { ItemSelectType, ItemInsertType } from "./schema";
+import type {
+  ItemSelectType,
+  ItemInsertType,
+  CategoriesTableType,
+} from "./schema";
 
 export async function getItem(id: number) {
   return new Promise<ItemSelectType>((resolve, rejects) => {
@@ -27,10 +31,6 @@ export async function getItems() {
   return new Promise<ItemSelectType[]>((resolve, rejects) => {
     db.query.ItemsTable.findMany()
       .then((items) => {
-        if (items.length === 0) {
-          rejects(new Error("No items found"));
-          return;
-        }
         resolve(items);
       })
       .catch(() => {
@@ -40,7 +40,7 @@ export async function getItems() {
   });
 }
 
-export async function createItem(item: ItemInsertType) {
+export async function addItem(item: ItemInsertType) {
   return new Promise<void>((resolve, rejects) => {
     db.insert(ItemsTable)
       .values({
@@ -76,6 +76,18 @@ export async function deleteItem(id: number) {
       })
       .catch(() => {
         rejects(new Error("Error deleting the item"));
+      });
+  });
+}
+
+export async function getCategories() {
+  return new Promise<CategoriesTableType[]>((resolve, rejects) => {
+    db.query.CategoriesTable.findMany()
+      .then((categories) => {
+        resolve(categories);
+      })
+      .catch(() => {
+        rejects(new Error("Error retrieving the categories"));
       });
   });
 }
