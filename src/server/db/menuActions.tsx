@@ -2,7 +2,8 @@
 
 import { eq } from "drizzle-orm";
 import { db } from ".";
-import { ItemsTable } from "./schema";
+import { CategoriesTable, ItemsTable } from "./schema";
+import snakeCase from "lodash.snakecase";
 import type {
   ItemSelectType,
   ItemInsertType,
@@ -39,12 +40,54 @@ export async function getItems() {
       });
   });
 }
-
-export async function addItem(item: ItemInsertType) {
+export async function doesItemExistBySlug(slug: string) {
+  return new Promise<boolean>((resolve, rejects) => {
+    db.query.ItemsTable.findFirst({
+      where: eq(ItemsTable.slug, slug),
+    })
+      .then((item) => {
+        if (!item) {
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      })
+      .catch(() => {
+        rejects(new Error("Error retrieving the item"));
+      });
+  });
+}
+export async function getItemBySlug(slug: string) {
+  return new Promise<{
+    id: number;
+    name: string;
+    slug: string;
+    price: number;
+    description: string;
+    image: string;
+    category_id: number;
+  }>((resolve, rejects) => {
+    db.query.ItemsTable.findFirst({
+      where: eq(ItemsTable.slug, slug),
+    })
+      .then((item) => {
+        if (!item) {
+          rejects(new Error("Item not found"));
+          return;
+        }
+        resolve(item);
+      })
+      .catch(() => {
+        rejects(new Error("Error retrieving the item"));
+      });
+  });
+}
+export async function addItem(item: Omit<ItemInsertType, "slug">) {
   return new Promise<void>((resolve, rejects) => {
     db.insert(ItemsTable)
       .values({
         ...item,
+        slug: snakeCase(item.name),
       })
       .then(() => resolve())
       .catch(() => {
@@ -80,6 +123,19 @@ export async function deleteItem(id: number) {
   });
 }
 
+export async function addCategory(name: string) {
+  return new Promise<void>((resolve, rejects) => {
+    db.insert(CategoriesTable)
+      .values({
+        name,
+        slug: snakeCase(name),
+      })
+      .then(() => resolve())
+      .catch(() => {
+        rejects(new Error("Error creating the category"));
+      });
+  });
+}
 export async function getCategories() {
   return new Promise<CategoriesTableType[]>((resolve, rejects) => {
     db.query.CategoriesTable.findMany()
@@ -92,6 +148,36 @@ export async function getCategories() {
   });
 }
 
+export async function getCategoriesWithItems() {
+  return new Promise<
+    {
+      name: string;
+      id: number;
+      slug: string;
+      items: {
+        name: string;
+        id: number;
+        slug: string;
+        price: number;
+        description: string;
+        image: string;
+        category_id: number;
+      }[];
+    }[]
+  >((resolve, rejects) => {
+    db.query.CategoriesTable.findMany({
+      with: {
+        items: true,
+      },
+    })
+      .then((categories) => {
+        resolve(categories);
+      })
+      .catch(() => {
+        rejects(new Error("Error retrieving the categories"));
+      });
+  });
+}
 export async function getItemsByCategory(categoryId: number) {
   return new Promise<ItemSelectType[]>((resolve, rejects) => {
     db.query.ItemsTable.findMany({
@@ -106,6 +192,24 @@ export async function getItemsByCategory(categoryId: number) {
       })
       .catch(() => {
         rejects(new Error("Error retrieving the items"));
+      });
+  });
+}
+
+export async function doesCategoryExistBySlug(slug: string) {
+  return new Promise<boolean>((resolve, rejects) => {
+    db.query.CategoriesTable.findFirst({
+      where: eq(CategoriesTable.slug, slug),
+    })
+      .then((category) => {
+        if (!category) {
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      })
+      .catch(() => {
+        rejects(new Error("Error retrieving the category"));
       });
   });
 }

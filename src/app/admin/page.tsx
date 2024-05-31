@@ -1,132 +1,28 @@
 import React from "react";
-import { addItem, getCategories } from "@/server/db/menuActions";
-import { createClient } from "@/server/supabase";
-import { upload } from "@/server/supabase/actions";
-function Admin() {
-  return (
-    <div className="flex p-6">
-      <AddItemForm />
-    </div>
-  );
-}
 
-async function AddItemForm() {
-  const collections = await getCategories();
-  const handleAddItem = async (formData: FormData) => {
-    "use server";
-    const name = formData.get("name");
-    const price = formData.get("price");
-    const category_id = Number(formData.get("category") ?? "1");
-    const description = formData.get("description");
-    const image = formData.get("image");
-    if (
-      typeof name !== "string" ||
-      typeof price !== "string" ||
-      typeof category_id !== "number" ||
-      typeof description !== "string" ||
-      image === null
-    ) {
-      return new Error("Invalid form data");
-    }
-    const bucket = "items";
-    const uploadFileResponse = await upload({
-      bucket,
-      name: name,
-      file: image,
-    });
-    if (typeof uploadFileResponse !== "string") {
-      return uploadFileResponse;
-    }
-
-    await addItem({
-      name,
-      price: Number(price),
-      category_id,
-      description,
-      image: uploadFileResponse,
-    });
-  };
+import AddItemForm from "../../components/AddItemForm";
+import { AddCategoryForm } from "../../components/AddCategoryForm";
+import { getCategoriesWithItems } from "@/server/db/menuActions";
+import CollectionGrid from "@/components/CategoryGrid";
+import ItemCard from "@/components/ItemCard";
+async function Admin() {
+  const categories = await getCategoriesWithItems();
   return (
-    <form
-      action={handleAddItem}
-      className="mx-auto flex w-96 max-w-full flex-col gap-5"
-    >
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-        Add a new item
-      </h1>
-      <div>
-        <label
-          htmlFor="name"
-          className="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
-        >
-          Item name
-        </label>
-        <input
-          type="name"
-          id="name"
-          name="name"
-          placeholder="dish 1"
-          required
-        />
+    <>
+      <div className="mx-auto flex justify-center gap-5 p-6">
+        <AddCategoryForm className="mx-0" />
+        <AddItemForm className="mx-0" />
       </div>
-      <div>
-        <label
-          htmlFor="price"
-          className="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
-        >
-          Price
-        </label>
-        <input
-          type="number"
-          placeholder="1.0"
-          inputMode="decimal"
-          min="0"
-          step="0.01"
-          id="price"
-          name="price"
-          required
-        />
+      <div className="container">
+        {categories.map((category) => (
+          <CollectionGrid key={category.id} title={category.name}>
+            {category.items.map((item) => (
+              <ItemCard key={item.id} {...item} />
+            ))}
+          </CollectionGrid>
+        ))}
       </div>
-      <div>
-        <label
-          htmlFor="price"
-          className="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
-        >
-          Category
-        </label>
-        <select id="category" name="category">
-          {collections.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label
-          htmlFor="description"
-          className="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
-        >
-          Description
-        </label>
-        <textarea
-          id="description"
-          rows={4}
-          name="description"
-          placeholder="Description"
-        />
-      </div>
-      <div>
-        <label
-          htmlFor="image"
-          className="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
-        >
-          Image
-        </label>
-        <input type="file" id="image" name="image" />
-      </div>
-      <button type="submit">Submit</button>
-    </form>
+    </>
   );
 }
 

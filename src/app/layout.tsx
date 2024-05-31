@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 import { env } from "@/env";
 import { Permanent_Marker } from "next/font/google";
 import { Toaster } from "sonner";
+import Providers from "@/components/Providers";
 
 const font = Permanent_Marker({
   weight: "400",
@@ -23,7 +24,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${font.className}`}>
-      <body>{children}</body>
+      <Providers>
+        <body>{children}</body>
+      </Providers>
       <Toaster />
     </html>
   );

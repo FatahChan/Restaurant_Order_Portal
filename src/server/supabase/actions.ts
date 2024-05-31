@@ -27,16 +27,40 @@ interface IUpload {
 }
 
 export async function upload({ bucket, name, file, fileOptions }: IUpload) {
-  const supabase = await createClient();
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(name, file, fileOptions);
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(name, file, fileOptions);
 
-  if (error) {
-    return error;
+    if (error) {
+      return {
+        data: null,
+        error: error.message,
+      };
+    }
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("items").getPublicUrl(data.path);
+    return {
+      data: publicUrl,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: "Error uploading the file",
+    };
   }
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("items").getPublicUrl(data.path);
-  return publicUrl;
 }
+// const { data, error } = await supabase.storage
+//   .from(bucket)
+//   .upload(name, file, fileOptions);
+
+// if (error) {
+//   reject(error.message);
+// }
+// const {
+//   data: { publicUrl },
+// } = supabase.storage.from("items").getPublicUrl(data.path);
+// resolve(publicUrl);

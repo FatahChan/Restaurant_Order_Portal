@@ -1,7 +1,11 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import {
+  relations,
+  type InferInsertModel,
+  type InferSelectModel,
+} from "drizzle-orm";
 import {
   decimal,
   integer,
@@ -21,6 +25,7 @@ export const createTable = pgTableCreator((name) => `order_portal_${name}`);
 export const ItemsTable = createTable("items", {
   id: serial("id").primaryKey().notNull(),
   name: text("name").notNull(),
+  slug: text("slug").unique().notNull(),
   price: decimal("price", { scale: 2 }).notNull().$type<number>(),
   description: text("description").default("").notNull(),
   image: text("image").notNull(),
@@ -32,7 +37,21 @@ export const ItemsTable = createTable("items", {
 export const CategoriesTable = createTable("categories", {
   id: serial("id").primaryKey().notNull(),
   name: text("name").notNull(),
+  slug: text("slug").unique().notNull(),
 });
+
+export const ItemsRelations = relations(ItemsTable, ({ one, many }) => ({
+  category: one(CategoriesTable, {
+    relationName: "items",
+    fields: [ItemsTable.id],
+    references: [CategoriesTable.id],
+  }),
+  orderItems: many(OrderItemsTable),
+}));
+
+export const CategoriesRelations = relations(CategoriesTable, ({ many }) => ({
+  items: many(ItemsTable, { relationName: "items" }),
+}));
 
 export const OrdersTable = createTable("orders", {
   id: serial("id").primaryKey().notNull(),
@@ -53,6 +72,15 @@ export const OrderItemsTable = createTable("order_items", {
     .default("pending")
     .notNull(),
 });
+
+export const OrdersRelations = relations(OrdersTable, ({ many }) => ({
+  items: many(OrderItemsTable),
+}));
+
+export const OrderItemsRelations = relations(OrderItemsTable, ({ one }) => ({
+  order: one(OrdersTable),
+  item: one(ItemsTable),
+}));
 
 type ItemSelectType = InferSelectModel<typeof ItemsTable>;
 type OrderSelectType = InferSelectModel<typeof OrdersTable>;
